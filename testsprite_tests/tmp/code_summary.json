@@ -1,0 +1,56 @@
+{
+  "tech_stack": ["Dart", "Flutter", "Material Design", "Custom Animations"],
+  "features": [
+    {
+      "name": "Landing Screen",
+      "description": "Animated landing screen with futuristic holographic device, concentric rings, particle field background, and data streams flowing in from sides. Includes accessibility support for reduced motion.",
+      "files": ["lib/screens/landing.dart"]
+    },
+    {
+      "name": "Dashboard Screen",
+      "description": "Main dashboard displaying glucose readings, medications, daily goals, and quick actions. Features translucent neon-style cards with modern UI.",
+      "files": ["lib/screens/dashboard.dart"]
+    },
+    {
+      "name": "Glucose Service",
+      "description": "Service for managing glucose readings including logging, storing, and retrieving latest readings with trend analysis.",
+      "files": ["lib/services/glucose_service.dart"]
+    },
+    {
+      "name": "Hydration Service", 
+      "description": "Service for tracking water intake and hydration levels with support for different units (ml, oz, cups).",
+      "files": ["lib/services/hydration_service.dart"]
+    },
+    {
+      "name": "Activity Service",
+      "description": "Service for tracking physical activities and exercise routines.",
+      "files": ["lib/services/activity_service.dart"]
+    },
+    {
+      "name": "Meal Tracker",
+      "description": "Screen for logging meals and food intake with nutritional information.",
+      "files": ["lib/screens/meal_tracker.dart"]
+    },
+    {
+      "name": "Activity Tracker",
+      "description": "Screen for tracking physical activities and exercise sessions.",
+      "files": ["lib/screens/activity_tracker.dart"]
+    },
+    {
+      "name": "Profile Screen",
+      "description": "User profile management screen for personal settings and preferences.",
+      "files": ["lib/screens/profile.dart"]
+    },
+    {
+      "name": "Main App",
+      "description": "Root application widget with Material Design theme and navigation setup.",
+      "files": ["lib/main.dart"]
+    },
+    {
+      "name": "Asset Management",
+      "description": "Image assets including health icons and fallback images for the landing screen.",
+      "files": ["assets/images/health_icon.png", "assets/images/landing_fallback.png"]
+    }
+  ]
+}
+

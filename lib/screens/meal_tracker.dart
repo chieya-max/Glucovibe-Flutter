@@ -53,87 +53,171 @@ class _MealTrackerScreenState extends State<MealTrackerScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // Neon palette
+    const background = Color(0xFF050814);
+    const teal = Color(0xFF00D1C1);
+    const indigo = Color(0xFF4B6FFF);
+    const violet = Color(0xFF8A6CFF);
+
     return Scaffold(
-      appBar: AppBar(title: const Text('Meal Tracker')),
+      backgroundColor: background,
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        title: const Text('Meal Tracker', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
+        centerTitle: true,
+      ),
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(16.0),
           child: Column(
             children: [
-              Card(
+              // Summary card
+              Container(
+                decoration: BoxDecoration(
+                  // ignore: deprecated_member_use
+                  color: Colors.white.withOpacity(0.07),
+                  borderRadius: BorderRadius.circular(18),
+                  // ignore: deprecated_member_use
+                  border: Border.all(color: indigo.withOpacity(0.10)),
+                  // ignore: deprecated_member_use
+                  boxShadow: [BoxShadow(color: violet.withOpacity(0.08), blurRadius: 16, offset: const Offset(0, 8))],
+                ),
                 child: Padding(
-                  padding: const EdgeInsets.all(12.0),
+                  padding: const EdgeInsets.symmetric(vertical: 18.0, horizontal: 12.0),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceAround,
                     children: [
                       Column(
                         children: [
-                          const Text('Calories', style: TextStyle(fontWeight: FontWeight.w600)),
-                          const SizedBox(height: 8),
-                          Text('$totalCalories kcal', style: const TextStyle(fontSize: 16)),
+                          Icon(Icons.fastfood, color: teal, size: 32),
+                          const SizedBox(height: 6),
+                          Text('$totalCalories kcal', style: const TextStyle(fontSize: 18, color: Colors.white, fontWeight: FontWeight.bold)),
+                          const Text('Calories', style: TextStyle(color: Colors.white70, fontSize: 13)),
                         ],
                       ),
                       Column(
                         children: [
-                          const Text('Sugar', style: TextStyle(fontWeight: FontWeight.w600)),
-                          const SizedBox(height: 8),
-                          Text('$totalSugar g', style: const TextStyle(fontSize: 16)),
+                          Icon(Icons.cake, color: violet, size: 32),
+                          const SizedBox(height: 6),
+                          Text('$totalSugar g', style: const TextStyle(fontSize: 18, color: Colors.white, fontWeight: FontWeight.bold)),
+                          const Text('Sugar', style: TextStyle(color: Colors.white70, fontSize: 13)),
                         ],
                       ),
                     ],
                   ),
                 ),
               ),
-              const SizedBox(height: 12),
-              Form(
-                key: _formKey,
-                child: Column(
-                  children: [
-                    TextFormField(
-                      controller: _nameController,
-                      decoration: const InputDecoration(labelText: 'Meal name'),
-                      validator: (v) => (v == null || v.isEmpty) ? 'Enter meal name' : null,
-                    ),
-                    const SizedBox(height: 8),
-                    Row(
+              const SizedBox(height: 16),
+              // Form card
+              Container(
+                decoration: BoxDecoration(
+                  // ignore: deprecated_member_use
+                  color: Colors.white.withOpacity(0.09),
+                  borderRadius: BorderRadius.circular(18),
+                  // ignore: deprecated_member_use
+                  border: Border.all(color: teal.withOpacity(0.10)),
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Form(
+                    key: _formKey,
+                    child: Column(
                       children: [
-                        Expanded(
-                          child: TextFormField(
-                            controller: _calController,
-                            decoration: const InputDecoration(labelText: 'Calories (kcal)'),
-                            keyboardType: TextInputType.number,
-                            validator: (v) => (v == null || v.isEmpty) ? 'Enter calories' : null,
+                        TextFormField(
+                          controller: _nameController,
+                          decoration: InputDecoration(
+                            labelText: 'Meal name',
+                            labelStyle: const TextStyle(color: Colors.white),
+                            filled: true,
+                            // ignore: deprecated_member_use
+                            fillColor: Colors.white.withOpacity(0.07),
+                            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                           ),
+                          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                          validator: (v) => (v == null || v.isEmpty) ? 'Enter meal name' : null,
                         ),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: TextFormField(
-                            controller: _sugarController,
-                            decoration: const InputDecoration(labelText: 'Sugar (g)'),
-                            keyboardType: TextInputType.number,
-                            validator: (v) => (v == null || v.isEmpty) ? 'Enter sugar grams' : null,
+                        const SizedBox(height: 8),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: TextFormField(
+                                controller: _calController,
+                                decoration: InputDecoration(
+                                  labelText: 'Calories (kcal)',
+                                  labelStyle: const TextStyle(color: Colors.white),
+                                  filled: true,
+                                  // ignore: deprecated_member_use
+                                  fillColor: Colors.white.withOpacity(0.07),
+                                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                                ),
+                                style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                                keyboardType: TextInputType.number,
+                                validator: (v) => (v == null || v.isEmpty) ? 'Enter calories' : null,
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: TextFormField(
+                                controller: _sugarController,
+                                decoration: InputDecoration(
+                                  labelText: 'Sugar (g)',
+                                  labelStyle: const TextStyle(color: Colors.white),
+                                  filled: true,
+                                  // ignore: deprecated_member_use
+                                  fillColor: Colors.white.withOpacity(0.07),
+                                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                                ),
+                                style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                                keyboardType: TextInputType.number,
+                                validator: (v) => (v == null || v.isEmpty) ? 'Enter sugar grams' : null,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 16),
+                        SizedBox(
+                          width: double.infinity,
+                          child: ElevatedButton.icon(
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: teal,
+                              foregroundColor: Colors.white,
+                              padding: const EdgeInsets.symmetric(vertical: 16),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                              textStyle: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                            ),
+                            icon: const Icon(Icons.add_circle_outline),
+                            label: const Text('Add Meal'),
+                            onPressed: _addEntry,
                           ),
                         ),
                       ],
                     ),
-                    const SizedBox(height: 12),
-                    ElevatedButton(onPressed: _addEntry, child: const Text('Add Meal')),
-                  ],
+                  ),
                 ),
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: 18),
               Expanded(
                 child: _entries.isEmpty
-                    ? const Center(child: Text('No meals logged'))
+                    ? const Center(child: Text('No meals yet! Try adding one.', style: TextStyle(color: Colors.white, fontSize: 16)))
                     : ListView.separated(
                         itemCount: _entries.length,
-                        separatorBuilder: (_, __) => const Divider(height: 1),
+                        separatorBuilder: (_, __) => const Divider(height: 1, color: Colors.white24),
                         itemBuilder: (context, index) {
                           final e = _entries[index];
-                          return ListTile(
-                            title: Text(e.name),
-                            subtitle: Text('${e.calories} kcal • ${e.sugarGrams} g sugar'),
-                            trailing: Text(TimeOfDay.fromDateTime(e.time).format(context)),
+                          return Container(
+                            margin: const EdgeInsets.symmetric(vertical: 6),
+                            decoration: BoxDecoration(
+                              // ignore: deprecated_member_use
+                              color: Colors.white.withOpacity(0.06),
+                              borderRadius: BorderRadius.circular(14),
+                            ),
+                            child: ListTile(
+                              leading: Icon(Icons.fastfood, color: indigo, size: 32),
+                              title: Text(e.name, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                              subtitle: Text('${e.calories} kcal • ${e.sugarGrams} g sugar', style: const TextStyle(color: Colors.white70)),
+                              trailing: Text(TimeOfDay.fromDateTime(e.time).format(context), style: const TextStyle(color: Colors.white)),
+                            ),
                           );
                         },
                       ),
