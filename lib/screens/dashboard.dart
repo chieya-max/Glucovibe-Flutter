@@ -1,5 +1,7 @@
 // ignore_for_file: deprecated_member_use
 
+import 'dart:async';
+import 'dart:math';
 import 'package:flutter/material.dart';
 import 'profile.dart';
 // reuse the edge-glow icon aesthetic
@@ -13,6 +15,130 @@ class DashboardScreen extends StatefulWidget {
 
   @override
   State<DashboardScreen> createState() => _DashboardScreenState();
+}
+
+// Animated glucose graph: small, neon-styled, synthetic line that scrolls horizontally.
+class AnimatedGlucoseGraph extends StatefulWidget {
+  final double baseline; // center value to oscillate around
+  const AnimatedGlucoseGraph({super.key, required this.baseline});
+
+  @override
+  State<AnimatedGlucoseGraph> createState() => _AnimatedGlucoseGraphState();
+}
+
+class _AnimatedGlucoseGraphState extends State<AnimatedGlucoseGraph> with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+  late final Timer _timer;
+  final List<double> _points = List<double>.filled(80, 0.0);
+  final Random _rng = Random();
+
+  @override
+  void initState() {
+    super.initState();
+    for (var i = 0; i < _points.length; i++) {
+      _points[i] = widget.baseline + _rng.nextDouble() * 6 - 3;
+    }
+    _controller = AnimationController(vsync: this, duration: const Duration(milliseconds: 800))..repeat();
+    _timer = Timer.periodic(const Duration(milliseconds: 400), (_) => _tick());
+  }
+
+  void _tick() {
+    setState(() {
+      // shift left and add a new noisy point near baseline
+      _points.removeAt(0);
+      final last = _points.isNotEmpty ? _points.last : widget.baseline;
+      final delta = (_rng.nextDouble() - 0.5) * 6; // small jitter
+      _points.add((last + delta) * 0.98 + (widget.baseline * 0.02));
+    });
+  }
+
+  @override
+  void dispose() {
+    _timer.cancel();
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      height: 120,
+      child: AnimatedBuilder(
+        animation: _controller,
+        builder: (context, _) => CustomPaint(
+          painter: _GlucosePainter(points: _points, color: const Color(0xFF00D1C1)),
+          // give some padding so glow isn't clipped
+          child: const SizedBox.expand(),
+        ),
+      ),
+    );
+  }
+}
+
+class _GlucosePainter extends CustomPainter {
+  final List<double> points;
+  final Color color;
+  _GlucosePainter({required this.points, required this.color});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    if (points.isEmpty) return;
+    final paint = Paint()
+      ..color = color
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 3.0
+      ..strokeJoin = StrokeJoin.round
+      ..maskFilter = MaskFilter.blur(BlurStyle.normal, 2);
+
+    // fill paint for subtle area under the curve
+    final fillPaint = Paint()
+      ..color = color.withOpacity(0.06)
+      ..style = PaintingStyle.fill;
+
+    final path = Path();
+    final minVal = points.reduce((a, b) => a < b ? a : b);
+    final maxVal = points.reduce((a, b) => a > b ? a : b);
+    final range = (maxVal - minVal).abs() > 0.001 ? (maxVal - minVal) : 1.0;
+    for (var i = 0; i < points.length; i++) {
+      final t = i / (points.length - 1);
+      final x = t * size.width;
+      final normalized = (points[i] - minVal) / range;
+      final y = size.height - (normalized * size.height * 0.9) - size.height * 0.05;
+      if (i == 0) {
+        path.moveTo(x, y);
+      } else {
+        path.lineTo(x, y);
+      }
+    }
+
+    // draw filled area under the path
+    final area = Path.from(path);
+    area.lineTo(size.width, size.height);
+    area.lineTo(0, size.height);
+    area.close();
+    canvas.drawPath(area, fillPaint);
+
+    // draw glow
+    final glow = Paint()
+      ..color = color.withOpacity(0.22)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 10
+      ..maskFilter = MaskFilter.blur(BlurStyle.normal, 8);
+    canvas.drawPath(path, glow);
+    canvas.drawPath(path, paint);
+
+    // draw last point marker for visibility
+    final last = points.last;
+    final lastT = (points.length - 1) / (points.length - 1);
+    final lastX = lastT * size.width;
+    final lastNorm = (last - minVal) / range;
+    final lastY = size.height - (lastNorm * size.height * 0.9) - size.height * 0.05;
+    final circlePaint = Paint()..color = color;
+    canvas.drawCircle(Offset(lastX, lastY), 4.5, circlePaint);
+  }
+
+  @override
+  bool shouldRepaint(covariant _GlucosePainter oldDelegate) => true;
 }
 
 class _DashboardScreenState extends State<DashboardScreen> {
@@ -108,6 +234,17 @@ class _DashboardScreenState extends State<DashboardScreen> {
                             ),
                             const SizedBox(height: 8),
                             Text('Trend: $trend', style: const TextStyle(color: Colors.greenAccent)),
+                            const SizedBox(height: 12),
+                            // Animated glucose graph showing recent trend
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                AnimatedGlucoseGraph(baseline: latestGlucose.toDouble()),
+                                const SizedBox(height: 6),
+                                // concise explanatory number/label for the graph
+                                Text('Current: $latestGlucose mg/dL', style: TextStyle(color: Colors.grey[200], fontSize: 12, fontWeight: FontWeight.w600)),
+                              ],
+                            ),
                           ],
                         ),
                       ),
@@ -124,6 +261,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
               ),
 
               const SizedBox(height: 12),
+
+              // Hydration is available from the Log Water quick action (dialog shows themed card)
 
               // Medications
               // Medications (translucent)
@@ -190,7 +329,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
               const SizedBox(height: 12),
 
-              // Quick actions
+              
               // Quick actions
               Container(
                 margin: const EdgeInsets.only(top: 12),
@@ -253,7 +392,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
     await showDialog<void>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Record Glucose'),
+        // slightly wider: reduce horizontal inset to 8% of screen width
+        insetPadding: EdgeInsets.symmetric(horizontal: MediaQuery.of(ctx).size.width * 0.08),
+        // dark dialog to match dashboard theme
+        backgroundColor: const Color(0xFF050814).withOpacity(0.96),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        title: const Text('Record Glucose', style: TextStyle(color: Colors.white)),
         content: Form(
           key: formKey,
           child: SingleChildScrollView(
@@ -262,7 +406,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
               children: [
                 TextFormField(
                   controller: valueController,
-                  decoration: const InputDecoration(labelText: 'Value (mg/dL)'),
+                    decoration: const InputDecoration(
+                    labelText: 'Value (mg/dL)',
+                    labelStyle: TextStyle(color: Colors.white),
+                    ),
                   keyboardType: TextInputType.number,
                   validator: (v) => (v == null || v.isEmpty) ? 'Enter glucose value' : null,
                 ),
@@ -270,29 +417,68 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 DropdownButtonFormField<String>(
                   initialValue: sampleType,
                   items: const [
-                    DropdownMenuItem(value: 'Capillary', child: Text('Capillary (finger-prick)')),
-                    DropdownMenuItem(value: 'Venous', child: Text('Venous')),
-                    DropdownMenuItem(value: 'Plasma', child: Text('Plasma')),
+                  DropdownMenuItem(
+                    value: 'Capillary',
+                    child: Text('Capillary (finger-prick)', style: TextStyle(color: Colors.white)),
+                  ),
+                  DropdownMenuItem(
+                    value: 'Venous',
+                    child: Text('Venous', style: TextStyle(color: Colors.white)),
+                  ),
+                  DropdownMenuItem(
+                    value: 'Plasma',
+                    child: Text('Plasma', style: TextStyle(color: Colors.white)),
+                  ),
                   ],
                   onChanged: (v) => sampleType = v ?? sampleType,
-                  decoration: const InputDecoration(labelText: 'Sample type'),
+                  decoration: const InputDecoration(
+                  labelText: 'Sample type',
+                  labelStyle: TextStyle(color: Colors.white),
+                  filled: true,
+                  fillColor: Color(0xFF1A2236), // dark background
+                  ),
+                  dropdownColor: Color(0xFF1A2236), // dark dropdown background
+                  style: const TextStyle(color: Colors.white), // selected text color
                 ),
                 const SizedBox(height: 8),
                 DropdownButtonFormField<String>(
                   initialValue: contextType,
                   items: const [
-                    DropdownMenuItem(value: 'Fasting', child: Text('Fasting')),
-                    DropdownMenuItem(value: 'Pre-meal', child: Text('Pre-meal')),
-                    DropdownMenuItem(value: 'Post-meal', child: Text('Post-meal')),
-                    DropdownMenuItem(value: 'Random', child: Text('Random')),
+                  DropdownMenuItem(
+                    value: 'Fasting',
+                    child: Text('Fasting', style: TextStyle(color: Colors.white)),
+                  ),
+                  DropdownMenuItem(
+                    value: 'Pre-meal',
+                    child: Text('Pre-meal', style: TextStyle(color: Colors.white)),
+                  ),
+                  DropdownMenuItem(
+                    value: 'Post-meal',
+                    child: Text('Post-meal', style: TextStyle(color: Colors.white)),
+                  ),
+                  DropdownMenuItem(
+                    value: 'Random',
+                    child: Text('Random', style: TextStyle(color: Colors.white)),
+                  ),
                   ],
                   onChanged: (v) => contextType = v ?? contextType,
-                  decoration: const InputDecoration(labelText: 'Context'),
+                  decoration: const InputDecoration(
+                  labelText: 'Context',
+                  labelStyle: TextStyle(color: Colors.white),
+                  filled: true,
+                  fillColor: Color(0xFF1A2236), // dark background
+                  ),
+                  dropdownColor: Color(0xFF1A2236), // dark dropdown background
+                  style: const TextStyle(color: Colors.white), // selected text color
                 ),
                 const SizedBox(height: 8),
                 TextFormField(
                   controller: notesController,
-                  decoration: const InputDecoration(labelText: 'Notes (optional)'),
+                  decoration: const InputDecoration(
+                  labelText: 'Notes (optional)',
+                  labelStyle: TextStyle(color: Colors.white),
+                  ),
+                  style: const TextStyle(color: Colors.white),
                 ),
                 const SizedBox(height: 8),
                 const Text('Tip: include meter reading and sample source for better tracking', style: TextStyle(fontSize: 12, color: Colors.grey)),
@@ -327,61 +513,68 @@ class _DashboardScreenState extends State<DashboardScreen> {
     await showDialog<void>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Log Water'),
-        content: Form(
-          key: formKey,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Wrap(
-                spacing: 8,
+        // slightly wider: reduce horizontal inset to 8% of screen width
+        insetPadding: EdgeInsets.symmetric(horizontal: MediaQuery.of(ctx).size.width * 0.08),
+        // dark dialog to match dashboard theme
+        backgroundColor: const Color(0xFF050814).withOpacity(0.96),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        title: const Text('Log Water', style: TextStyle(color: Colors.white)),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Themed hydration summary card (from services) shown inside the dialog
+            HydrationCard(onAddPressed: (_) {}),
+            const SizedBox(height: 12),
+            Form(
+              key: formKey,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
                 children: [
-                  ElevatedButton(
-                    onPressed: () {
-                      amountController.text = '250'; unit = 'ml';
-                    },
-                    child: const Text('250 ml'),
+                  Wrap(
+                  spacing: 10,
                   ),
-                  ElevatedButton(
-                    onPressed: () {
-                      amountController.text = '500'; unit = 'ml';
-                    },
-                    child: const Text('500 ml'),
+                  const SizedBox(height: 8),
+                  TextFormField(
+                  controller: amountController,
+                  keyboardType: TextInputType.numberWithOptions(decimal: true),
+                  decoration: const InputDecoration(
+                    labelText: 'Amount',
+                    labelStyle: TextStyle(color: Colors.white),
                   ),
-                  ElevatedButton(
-                    onPressed: () {
-                      amountController.text = '1'; unit = 'cup';
-                    },
-                    child: const Text('1 cup'),
+                  style: const TextStyle(color: Colors.white),
+                  validator: (v) => (v == null || v.isEmpty) ? 'Enter amount' : null,
                   ),
-                  ElevatedButton(
-                    onPressed: () {
-                      amountController.text = '8'; unit = 'oz';
-                    },
-                    child: const Text('8 oz'),
+                  const SizedBox(height: 8),
+                  DropdownButtonFormField<String>(
+                  initialValue: unit,
+                  items: const [
+                    DropdownMenuItem(
+                    value: 'ml',
+                    child: Text('ml', style: TextStyle(color: Colors.white)),
+                    ),
+                    DropdownMenuItem(
+                    value: 'oz',
+                    child: Text('oz', style: TextStyle(color: Colors.white)),
+                    ),
+                    DropdownMenuItem(
+                    value: 'cup',
+                    child: Text('cup', style: TextStyle(color: Colors.white)),
+                    ),
+                  ],
+                  onChanged: (v) => unit = v ?? unit,
+                  decoration: const InputDecoration(
+                    labelText: 'Unit',
+                    labelStyle: TextStyle(color: Colors.white),
+                    filled: true,
+                    fillColor: Color(0xFF1A2236),
+                  ),
+                  dropdownColor: Color(0xFF1A2236),
+                  style: const TextStyle(color: Colors.white),
                   ),
                 ],
               ),
-              const SizedBox(height: 8),
-              TextFormField(
-                controller: amountController,
-                keyboardType: TextInputType.numberWithOptions(decimal: true),
-                decoration: const InputDecoration(labelText: 'Amount'),
-                validator: (v) => (v == null || v.isEmpty) ? 'Enter amount' : null,
-              ),
-              const SizedBox(height: 8),
-              DropdownButtonFormField<String>(
-                initialValue: unit,
-                items: const [
-                  DropdownMenuItem(value: 'ml', child: Text('ml')),
-                  DropdownMenuItem(value: 'oz', child: Text('oz')),
-                  DropdownMenuItem(value: 'cup', child: Text('cup')),
-                ],
-                onChanged: (v) => unit = v ?? unit,
-                decoration: const InputDecoration(labelText: 'Unit'),
-              ),
-            ],
-          ),
+            ),
+          ],
         ),
         actions: [
           TextButton(onPressed: () => Navigator.of(ctx).pop(), child: const Text('Cancel')),

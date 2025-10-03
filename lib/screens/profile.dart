@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'dart:ui' show ImageFilter;
+import 'dart:math' as math;
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -37,6 +39,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
     const indigo = Color(0xFF4B6FFF);
     const violet = Color(0xFF8A6CFF);
 
+  // Avatar asset (patient photo placeholder) - rename your image to this filename
+  const String avatarAsset = 'assets/images/patient_photo.jpg';
+
     return Scaffold(
       backgroundColor: background,
       appBar: AppBar(
@@ -64,24 +69,25 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     padding: const EdgeInsets.all(18.0),
                     child: Column(
                       children: [
-                        Row(
+                        // Avatar displayed above the name field
+                        Column(
                           children: [
-                            Icon(Icons.person, color: violet, size: 32),
-                            const SizedBox(width: 10),
-                            Expanded(
-                              child: TextFormField(
-                                controller: _nameController,
-                                decoration: InputDecoration(
-                                  labelText: 'Full name',
-                                  labelStyle: const TextStyle(color: Colors.white),
-                                  filled: true,
-                                  // ignore: deprecated_member_use
-                                  fillColor: Colors.white.withOpacity(0.07),
-                                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                                ),
-                                style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-                                validator: (v) => (v == null || v.isEmpty) ? 'Enter name' : null,
+                            Center(
+                              child: CornerGlowAvatar(radius: 36 * 2.5, asset: avatarAsset, glowColor: violet),
+                            ),
+                            const SizedBox(height: 12),
+                            TextFormField(
+                              controller: _nameController,
+                              decoration: InputDecoration(
+                                labelText: 'Full name',
+                                labelStyle: const TextStyle(color: Colors.white),
+                                filled: true,
+                                // ignore: deprecated_member_use
+                                fillColor: Colors.white.withOpacity(0.07),
+                                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                               ),
+                              style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                              validator: (v) => (v == null || v.isEmpty) ? 'Enter name' : null,
                             ),
                           ],
                         ),
@@ -164,6 +170,96 @@ class _ProfileScreenState extends State<ProfileScreen> {
             ),
           ),
         ),
+      ),
+    );
+  }
+}
+
+// A larger avatar with an animated colored glow traveling near the top-left corner.
+class CornerGlowAvatar extends StatefulWidget {
+  final double radius;
+  final String asset;
+  final Color glowColor;
+
+  const CornerGlowAvatar({super.key, required this.radius, required this.asset, required this.glowColor});
+
+  @override
+  State<CornerGlowAvatar> createState() => _CornerGlowAvatarState();
+}
+
+class _CornerGlowAvatarState extends State<CornerGlowAvatar> with SingleTickerProviderStateMixin {
+  late final AnimationController _ctrl;
+
+  @override
+  void initState() {
+    super.initState();
+    _ctrl = AnimationController(vsync: this, duration: const Duration(seconds: 3))..repeat();
+  }
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final size = widget.radius * 2;
+    return SizedBox(
+      width: size,
+      height: size,
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          // subtle background rim
+          Container(
+            width: size,
+            height: size,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              // ignore: deprecated_member_use
+              color: Colors.white.withOpacity(0.03),
+            ),
+          ),
+          // avatar image
+          ClipOval(
+            child: Image.asset(widget.asset, width: size - 6, height: size - 6, fit: BoxFit.cover),
+          ),
+          // animated corner glow — a small blurred circle that orbits near top-left
+          Positioned.fill(
+            child: AnimatedBuilder(
+              animation: _ctrl,
+              builder: (context, child) {
+                final t = _ctrl.value;
+                // compute a position that moves along a small arc near top-left
+                final angle = -math.pi / 2 + (t * math.pi / 2); // from top center toward left top
+                final r = widget.radius * 0.65; // radius of orbit
+                final dx = (size / 2) + (math.cos(angle) * r) - (size / 2);
+                final dy = (size / 2) + (math.sin(angle) * r) - (size / 2);
+                return Transform.translate(
+                  offset: Offset(dx, dy),
+                  child: child,
+                );
+              },
+              child: Center(
+                child: IgnorePointer(
+                  child: ImageFiltered(
+                    imageFilter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),
+                    child: Container(
+                      width: 18,
+                      height: 18,
+                      decoration: BoxDecoration(
+                        // ignore: deprecated_member_use
+                        color: widget.glowColor.withOpacity(0.85),
+                        shape: BoxShape.circle,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
